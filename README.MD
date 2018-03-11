@@ -1,6 +1,7 @@
-#### Ansible:  
+#### Ansible  
 
-Few basic commands to work with:
+ansible 2.2.1.0  
+Basic commands to work with:  
 
 ```bash
 # ansible-playbook -i inventories/misc/hosts site.yml --ask-vault-pass --tags "docker"  
