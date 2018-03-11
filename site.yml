@@ -1,0 +1,6 @@
+---
+- name: Apply basic centos settings
+  hosts: all
+  roles:
+    - common
+    - adduser
