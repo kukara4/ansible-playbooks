@@ -23,6 +23,7 @@
     - htop
     - atop
     - wget
+    - firewalld
     - zip
     - unzip
     - ntp
@@ -32,13 +33,17 @@
     - git
 
 - name: Disable Selinux
+  ignore_errors: yes
+  register: result
   selinux:
     state: disabled
 
 - name: Stop firewalld
+  ignore_errors: yes
   systemd: name=firewalld state=stopped
 
 - name: Disable firewalld
+  ignore_errors: yes
   systemd: name=firewalld enabled=no
 
 - name: Allow 'wheel' group to have passwordless sudo
@@ -49,6 +54,27 @@
     line: '%wheel ALL=(ALL) NOPASSWD: ALL'
     validate: 'visudo -cf %s'
 
+- name: Disallow password authentication
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication no"
+    state: present
+  register: ssh_pass
+
+- name: Allow root SSH access
+  lineinfile:
+    dest: /etc/ssh/sshd_config
+    regexp: "^PermitRootLogin"
+    line: "PermitRootLogin yes"
+    state: present
+  register: ssh_root
+
+- name: Restart ssh
+  service:
+    name: sshd
+    state: restarted
+  when: ssh_pass.changed or ssh_root.changed
 
 - name: Change prompt
   lineinfile: dest=/etc/bashrc regexp="^PS1=" line="PS1='\T \[\e[1;37m\][ \[\e[1;32m\]\u \[\e[1;37m\]\H\[\e[1;30m\]\[\e[0;32m\]\[\e[1;37m\] ] \[\e[1;32m\]\w\[\e[0;37m\] '"
@@ -64,6 +90,8 @@
   shell: sleep 2 && /sbin/shutdown -r now "Ansible system package upgraded"
   async: 1
   poll: 0
+  when: result.changed
 
 - name: Waiting for reboot complete
   local_action: wait_for host={{ ansible_host }} state=started delay=30 timeout=60
+  when: result.changed

@@ -1,6 +1,13 @@
 ---
-- name: Apply basic centos settings
+- name: Basic config
   hosts: all
+  tags: system
   roles:
     - common
     - adduser
+
+- name: Docker engine
+  hosts: docker
+  tags: docker
+  roles:
+    - docker
